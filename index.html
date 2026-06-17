@@ -62,8 +62,6 @@
     <div class="card c-rata"><div class="card-lbl">Rata-rata / Hari</div><div class="card-val" id="dRata">—</div><div class="card-sub" id="dRataSub">hari aktual tercatat</div></div>
     <div class="card c-sisa"><div class="card-lbl">Sisa Limit Bulanan</div><div class="card-val" id="dSisa">—</div><div class="card-sub" id="dSisaSub">limit belum diatur</div></div>
   </div>
-  <div class="ai-result-body" id="aiResultBody"></div>
-
   <div class="limit-section" id="dashLimitTotal" style="display:none;"><div class="limit-title">Limit Total Bulanan</div><div id="dashLimitTotalItem"></div></div>
   <div class="limit-section" id="dashLimitKat"><div class="limit-title">Limit per Kategori</div><div id="dashLimitKatItems"></div></div>
 
@@ -76,31 +74,7 @@
     <tbody id="dashRecentBody"></tbody></table>
   </div>
 
-  <!-- EVALUASI AI -->
-  <div style="margin-top:28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-    <button class="btn-eval" id="evalBtn" onclick="requestEvaluation()">
-      ✦ Evaluasi Bulan Ini dengan AI
-    </button>
-    <div class="eval-loading" id="evalLoading" style="display:none;">
-      <div class="eval-spinner"></div>
-      <span id="evalLoadingText">AI sedang menganalisis...</span>
-    </div>
-  </div>
 
-  <div class="eval-panel" id="evalPanel">
-    <div class="eval-header">
-      <div>
-        <div class="eval-title">✦ Evaluasi Keuangan AI</div>
-        <div class="eval-meta" id="evalMeta"></div>
-      </div>
-      <button class="del-btn" onclick="closeEvalPanel()" title="Tutup" style="font-size:16px;">✕</button>
-    </div>
-    <div class="eval-body" id="evalBody"></div>
-    <div class="eval-actions">
-      <button class="btn" onclick="saveEvalAsNote()">↓ Simpan sebagai Catatan</button>
-      <button class="btn btn-ghost" onclick="requestEvaluation()">↺ Evaluasi Ulang</button>
-    </div>
-  </div>
 
 </div>
 
@@ -243,40 +217,7 @@
 
 <!-- ═══ PENGATURAN ═══ -->
 <div class="panel" id="panel-pengaturan">
-  <div class="settings-group">
-    <div class="sg-title">Konfigurasi AI</div>
-    <div style="font-size:11px;color:var(--text-mute);line-height:1.8;margin-bottom:16px;">
-      API Key digunakan untuk fitur Evaluasi AI. Disimpan hanya di perangkat ini (<code style="font-size:10px;color:var(--text-dim);">localStorage</code>),
-      tidak pernah dikirim ke mana pun selain langsung ke server Anthropic.
-      Key <strong style="color:var(--gold);">tidak ikut diekspor</strong> saat backup data.
-    </div>
 
-    <div class="field" style="margin-bottom:12px;">
-      <label>Anthropic API Key</label>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <div style="position:relative;flex:1;">
-          <input type="password" id="apiKeyInput"
-            placeholder="sk-ant-api03-..."
-            style="background:var(--bg);border:1px solid var(--border);border-radius:4px;
-                   color:var(--text);font-family:'DM Mono',monospace;font-size:12px;
-                   padding:10px 40px 10px 12px;outline:none;width:100%;
-                   transition:border-color 0.15s;letter-spacing:0.05em;"
-            oninput="onApiKeyInput()">
-          <button onclick="toggleApiKeyVisibility()" id="apiKeyToggle"
-            title="Tampilkan/sembunyikan key"
-            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
-                   background:none;border:none;color:var(--text-mute);cursor:pointer;
-                   font-size:13px;padding:2px;transition:color 0.15s;">👁</button>
-        </div>
-      </div>
-    </div>
-
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <button class="btn" onclick="saveApiKey()">Simpan API Key</button>
-      <button class="btn btn-danger" id="apiKeyClearBtn" onclick="clearApiKey()" style="display:none;">Hapus Key</button>
-      <div id="apiKeyStatus" style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-mute);">Memuat...</div>
-    </div>
-  </div>
 
   <div class="settings-group">
     <div class="sg-title">Kelola Kategori Pengeluaran</div>
@@ -377,52 +318,6 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeEditTagModal()">Batal</button>
       <button class="btn" onclick="saveEditTag()">Simpan</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL KONFIRMASI EVALUASI AI -->
-<div class="modal-backdrop" id="evalConfirmModal">
-  <div class="modal" style="max-width:520px;">
-    <div class="modal-title">✦ Konfirmasi Kirim Data ke AI</div>
-    <p style="font-size:11px;color:var(--text-mute);margin-bottom:16px;line-height:1.7;">
-      Berikut adalah ringkasan data yang akan dikirim ke Anthropic AI.
-      Data ini <strong style="color:var(--text-dim);">tidak mengandung detail transaksi satu per satu</strong>
-      — hanya angka agregat.
-    </p>
-
-    <div class="eval-confirm-section">
-      <span class="eval-confirm-label">Periode & Ringkasan</span>
-      <div id="ecPeriode"></div>
-    </div>
-
-    <div class="eval-confirm-section">
-      <span class="eval-confirm-label">Pengeluaran per Kategori</span>
-      <div id="ecKategori"></div>
-    </div>
-
-    <div class="eval-confirm-section" id="ecTagSection">
-      <span class="eval-confirm-label">Pengeluaran per Tag</span>
-      <div id="ecTag"></div>
-    </div>
-
-    <div class="eval-confirm-section" id="ecLimitSection">
-      <span class="eval-confirm-label">Status Limit</span>
-      <div id="ecLimit"></div>
-    </div>
-
-    <div id="ecWarn"></div>
-
-    <p style="font-size:10px;color:var(--text-mute);margin-top:14px;line-height:1.7;">
-      Data dikirim langsung dari browsermu ke server Anthropic menggunakan API Key yang tersimpan.
-      Anthropic memiliki kebijakan privasi tersendiri di <strong>anthropic.com/privacy</strong>.
-    </p>
-
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeEvalConfirm()">Batal</button>
-      <button class="btn-eval" onclick="confirmAndEvaluate()" style="padding:10px 20px;">
-        ✦ Ya, Kirim & Evaluasi
-      </button>
     </div>
   </div>
 </div>
