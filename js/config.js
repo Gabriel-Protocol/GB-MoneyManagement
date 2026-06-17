@@ -56,6 +56,8 @@ if (!st.categories) st.categories = [...DEFAULT_CATS];
 if (!st.settings.limitKategori) st.settings.limitKategori = {};
 if (!st.tags) st.tags = [];
 if (!st.notes) st.notes = [];
+if (!st.savings) st.savings = [];
+if (st.exportNote === undefined) st.exportNote = '';
 
 // Filters, View Context & Interactions State
 var curYear;

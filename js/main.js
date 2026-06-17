@@ -109,6 +109,15 @@ function deleteDebt(id){
   renderDebts();
 }
 
+function toggleDebtLunas(id, checked){
+  const debt = st.debts.find(d => d.id === id);
+  if(debt){
+    debt.lunas = checked;
+    save();
+    renderDebts();
+  }
+}
+
 // ── KELOLA LIMIT PENGATURAN FORM ──
 function saveLimitBulan(){ 
   const sLimitBulan = document.getElementById('sLimitBulan');
@@ -209,6 +218,124 @@ function init(){
   if(dtDate) dtDate.value = today;
   
   initAll();
+}
+
+function addSavingGoal(){
+  const nameEl = document.getElementById('savTargetName');
+  const tgtEl = document.getElementById('savTargetAmount');
+  const depEl = document.getElementById('savDepositAmount');
+  const freqEl = document.getElementById('savFrequency');
+  const curEl = document.getElementById('savCurrentAmount');
+
+  const name = nameEl ? nameEl.value.trim() : '';
+  const tgt = tgtEl ? parseFloat(tgtEl.value) : 0;
+  const dep = depEl ? parseFloat(depEl.value) : 0;
+  const freq = freqEl ? freqEl.value : 'minggu';
+  const cur = curEl ? parseFloat(curEl.value) : 0;
+
+  if(!name){
+    showToast('Nama target harus diisi.', 'error');
+    return;
+  }
+  if(isNaN(tgt) || tgt <= 0){
+    showToast('Nominal target tidak valid.', 'error');
+    return;
+  }
+  if(isNaN(dep) || dep <= 0){
+    showToast('Uang yang ditabung tidak valid.', 'error');
+    return;
+  }
+
+  if(!st.savings) st.savings = [];
+  st.savings.push({
+    name,
+    target: tgt,
+    deposit: dep,
+    frequency: freq,
+    current: isNaN(cur) ? 0 : cur
+  });
+  save();
+
+  if(nameEl) nameEl.value = '';
+  if(tgtEl) tgtEl.value = '';
+  if(depEl) depEl.value = '';
+  if(curEl) curEl.value = '0';
+
+  renderSavings();
+  showToast('Rencana tabungan ditambahkan!', 'success');
+}
+
+function deleteSavingGoal(idx){
+  if(!confirm('Hapus tujuan tabungan ini?')) return;
+  st.savings.splice(idx, 1);
+  save();
+  renderSavings();
+  renderDashboard();
+}
+
+function toggleEditSavingGoal(idx, editing){
+  if (!st.savings[idx]) return;
+  st.savings[idx].editing = editing;
+  renderSavings();
+}
+
+function saveEditedSavingGoal(idx){
+  const nameEl = document.getElementById(`editSavName_${idx}`);
+  const tgtEl = document.getElementById(`editSavTarget_${idx}`);
+  const depEl = document.getElementById(`editSavDeposit_${idx}`);
+  const freqEl = document.getElementById(`editSavFreq_${idx}`);
+
+  const name = nameEl ? nameEl.value.trim() : '';
+  const tgt = tgtEl ? parseFloat(tgtEl.value) : 0;
+  const dep = depEl ? parseFloat(depEl.value) : 0;
+  const freq = freqEl ? freqEl.value : 'minggu';
+
+  if(!name){
+    showToast('Nama target harus diisi.', 'error');
+    return;
+  }
+  if(isNaN(tgt) || tgt <= 0){
+    showToast('Nominal target tidak valid.', 'error');
+    return;
+  }
+  if(isNaN(dep) || dep <= 0){
+    showToast('Uang yang ditabung tidak valid.', 'error');
+    return;
+  }
+
+  const g = st.savings[idx];
+  g.name = name;
+  g.target = tgt;
+  g.deposit = dep;
+  g.frequency = freq;
+  delete g.editing;
+
+  save();
+  renderSavings();
+  renderDashboard();
+  showToast('Rencana tabungan berhasil diperbarui!', 'success');
+}
+
+function adjustSavingGoalAmount(idx, isAdd){
+  const inp = document.getElementById(`addDepAmt_${idx}`);
+  if(!inp) return;
+  const amt = parseFloat(inp.value);
+  if(isNaN(amt) || amt <= 0){
+    showToast('Masukkan nominal rupiah yang valid.', 'error');
+    return;
+  }
+  const g = st.savings[idx];
+  if(isAdd){
+    g.current = (g.current || 0) + amt;
+    showToast(`Berhasil menambah tabungan ${rp(amt)}!`, 'success');
+  } else {
+    g.current = Math.max(0, (g.current || 0) - amt);
+    showToast(`Berhasil menarik tabungan ${rp(amt)}!`, 'success');
+  }
+  inp.value = '';
+  save();
+  renderSavings();
+  renderDashboard();
 }
 
 // Bind click event listeners saat DOM dimuat

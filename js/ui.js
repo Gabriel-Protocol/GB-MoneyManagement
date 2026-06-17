@@ -4,8 +4,9 @@
 
 // Ganti Menu Tab Aktif
 function switchTab(id){
+  const tabIds = ['dashboard', 'transaksi', 'hutang', 'tabungan', 'pengaturan', 'data'];
   document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', ['dashboard', 'transaksi', 'hutang', 'pengaturan', 'data'][i] === id);
+    t.classList.toggle('active', tabIds[i] === id);
   });
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   
@@ -21,8 +22,13 @@ function switchTab(id){
       loadApiKeyToForm();
     }
   }
-  if(id === 'data') renderSummary();
+  if(id === 'data') {
+    renderSummary();
+    const noteArea = document.getElementById('exportNoteInput');
+    if (noteArea) noteArea.value = st.exportNote || '';
+  }
   if(id === 'hutang') renderDebts();
+  if(id === 'tabungan') renderSavings();
 }
 
 // Tampilkan Toast Notifikasi Kecil di Pojok Bawah
@@ -141,6 +147,33 @@ function renderDashboard(){
         <td class="td-note">${escH(t.note) || '—'}</td>
       </tr>`).join('');
   }
+
+  // Render savings summary on dashboard
+  const dSavSec = document.getElementById('dashSavingsSection');
+  const dSavItems = document.getElementById('dashSavingsItems');
+  if(dSavSec && dSavItems) {
+    if(!st.savings || st.savings.length === 0) {
+      dSavSec.style.display = 'none';
+    } else {
+      dSavSec.style.display = '';
+      dSavItems.innerHTML = st.savings.map(g => {
+        const cur = g.current || 0;
+        const tgt = g.target || 0;
+        const pct = tgt > 0 ? Math.min(100, Math.round((cur / tgt) * 100)) : 0;
+        return `
+          <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:4px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:11px; gap:8px;">
+              <span style="font-weight:500; font-family:'Playfair Display',serif; color:var(--text); text-overflow:ellipsis; overflow:hidden; white-space:nowrap; max-width:125px;" title="${escH(g.name)}">${escH(g.name)}</span>
+              <span style="font-family:'DM Mono',monospace; color:var(--gold-dim); font-weight:bold;">${pct}%</span>
+            </div>
+            <div style="background:var(--bg); border:1px solid var(--border); height:6px; border-radius:3px; overflow:hidden;">
+              <div style="background:var(--gold); height:100%; width:${pct}%;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
 }
 
 // ── RENDER: TRANSAKSI ──
@@ -205,7 +238,7 @@ function renderTx(){
 
   const dates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
   const rows = [];
-  rows.push(`<tr><td colspan="8"><label><input type="checkbox" id="txSelectAll"> Pilih Semua yang tampil</label></td></tr>`);
+  rows.push(`<tr><td colspan="8"><label style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;"><input type="checkbox" id="txSelectAll" class="custom-cb"> Pilih Semua yang tampil</label></td></tr>`);
 
   dates.forEach(date => {
     const items = grouped[date];
@@ -228,7 +261,7 @@ function renderTx(){
         : '<span style="color:var(--text-mute);font-size:10px;">—</span>';
 
       rows.push(`<tr>
-        <td><input type="checkbox" ${selectedTxIds.has(t.id) ? 'checked' : ''} onchange="this.checked ? selectedTxIds.add('${t.id}') : selectedTxIds.delete('${t.id}'); updateSelectedSummary();"></td>
+        <td><input type="checkbox" class="custom-cb" ${selectedTxIds.has(t.id) ? 'checked' : ''} onchange="this.checked ? selectedTxIds.add('${t.id}') : selectedTxIds.delete('${t.id}'); updateSelectedSummary();"></td>
         <td class="td-date">${shortDate(t.date)}</td>
         <td><span class="badge badge-${t.type === 'pemasukan' ? 'masuk' : 'keluar'}">${t.type === 'pemasukan' ? 'Masuk' : 'Keluar'}</span></td>
         <td class="td-amt" style="color:${t.type === 'pemasukan' ? 'var(--green)' : 'var(--red)'};">${rp(t.amount)}</td>
@@ -270,9 +303,18 @@ function updateSelectedSummary(){
   const netto = masuk - keluar;
   if (count === 0) {
     el.innerHTML = '';
+    el.style.display = 'none';
   } else {
-    el.innerHTML = `Dipilih: ${count} transaksi &nbsp; | &nbsp; Masuk: ${rp(masuk)} &nbsp; | &nbsp; Keluar: ${rp(keluar)} &nbsp; | &nbsp; Netto: ${rp(netto)}
-    <button type="button" class="btn btn-ghost" onclick="selectedTxIds.clear(); renderTx();" style="margin-left:12px; padding: 4px 10px; font-size: 9px;">Bersihkan Pilihan</button>`;
+    el.style.display = 'flex';
+    el.innerHTML = `
+      <div>
+        Dipilih: <strong>${count}</strong> transaksi &nbsp; | &nbsp; 
+        Masuk: <span style="color:var(--green); font-weight:500;">${rp(masuk)}</span> &nbsp; | &nbsp; 
+        Keluar: <span style="color:var(--red); font-weight:500;">${rp(keluar)}</span> &nbsp; | &nbsp; 
+        Netto: <span style="font-weight:bold; color:${netto >= 0 ? 'var(--green)' : 'var(--red)'}">${rp(netto)}</span>
+      </div>
+      <button type="button" class="btn btn-ghost" onclick="selectedTxIds.clear(); renderTx();" style="padding: 6px 12px; font-size: 10px; letter-spacing:0.04em; text-transform:uppercase;">Bersihkan Pilihan</button>
+    `;
   }
 }
 
@@ -325,21 +367,42 @@ function renderDebts(){
   const tHutlbl = document.getElementById('totalHutangLabel');
   const tPiulbl = document.getElementById('totalPiutangLabel');
   
-  if(tHutlbl) tHutlbl.textContent = rp(hutang.reduce((a,d) => a + d.amount, 0)) + ' total';
-  if(tPiulbl) tPiulbl.textContent = rp(piutang.reduce((a,d) => a + d.amount, 0)) + ' total';
+  // Only calculate unpaid debts or show grand totals?
+  // Let's show grand total of unpaid debts vs total debts, or let's calculate total unpaid.
+  // The user said: "Jika checkbox dicentang, maka warna text jadi abu-abu (artinya lunas)."
+  // Showing total unpaid would be incredibly helpful, or let's match they want: total amount. Let's do total unpaid and total!
+  const unpaidHutang = hutang.filter(d => !d.lunas).reduce((a,d) => a + d.amount, 0);
+  const unpaidPiutang = piutang.filter(d => !d.lunas).reduce((a,d) => a + d.amount, 0);
+  
+  if(tHutlbl) tHutlbl.textContent = rp(unpaidHutang) + ' belum lunas';
+  if(tPiulbl) tPiulbl.textContent = rp(unpaidPiutang) + ' belum lunas';
   
   const hBody = document.getElementById('hutangBody');
   if(hBody) {
     hBody.innerHTML = hutang.length === 0 ?
-      '<tr><td colspan="5" class="empty-state">Tidak ada hutang.</td></tr>' :
-      hutang.map(d => `<tr><td class="td-date">${shortDate(d.date)}</td><td>${escH(d.name)}</td><td class="td-amt" style="color:var(--amber);">${rp(d.amount)}</td><td class="td-note">${escH(d.note) || '—'}</td><td class="td-del"><button class="del-btn" onclick="deleteDebt(${d.id})">✕</button></td></tr>`).join('');
+      '<tr><td colspan="6" class="empty-state">Tidak ada hutang.</td></tr>' :
+      hutang.map(d => `<tr class="${d.lunas ? 'lunas-row' : ''}">
+        <td style="text-align:center;"><input type="checkbox" class="custom-cb" ${d.lunas ? 'checked' : ''} onchange="toggleDebtLunas(${d.id}, this.checked)"></td>
+        <td class="td-date">${shortDate(d.date)}</td>
+        <td>${escH(d.name)}</td>
+        <td class="td-amt" style="color:var(--amber);">${rp(d.amount)}</td>
+        <td class="td-note">${escH(d.note) || '—'}</td>
+        <td class="td-del"><button class="del-btn" onclick="deleteDebt(${d.id})">✕</button></td>
+      </tr>`).join('');
   }
   
   const pBody = document.getElementById('piutangBody');
   if(pBody) {
     pBody.innerHTML = piutang.length === 0 ?
-      '<tr><td colspan="5" class="empty-state">Tidak ada piutang.</td></tr>' :
-      piutang.map(d => `<tr><td class="td-date">${shortDate(d.date)}</td><td>${escH(d.name)}</td><td class="td-amt" style="color:var(--blue);">${rp(d.amount)}</td><td class="td-note">${escH(d.note) || '—'}</td><td class="td-del"><button class="del-btn" onclick="deleteDebt(${d.id})">✕</button></td></tr>`).join('');
+      '<tr><td colspan="6" class="empty-state">Tidak ada piutang.</td></tr>' :
+      piutang.map(d => `<tr class="${d.lunas ? 'lunas-row' : ''}">
+        <td style="text-align:center;"><input type="checkbox" class="custom-cb" ${d.lunas ? 'checked' : ''} onchange="toggleDebtLunas(${d.id}, this.checked)"></td>
+        <td class="td-date">${shortDate(d.date)}</td>
+        <td>${escH(d.name)}</td>
+        <td class="td-amt" style="color:var(--blue);">${rp(d.amount)}</td>
+        <td class="td-note">${escH(d.note) || '—'}</td>
+        <td class="td-del"><button class="del-btn" onclick="deleteDebt(${d.id})">✕</button></td>
+      </tr>`).join('');
   }
 }
 
@@ -500,6 +563,13 @@ function doExportPDF(){
       <div class="sum-box"><div class="sum-lbl">Saldo Bersih</div><div class="sum-val sum-saldo">${rp(totalMasuk - totalKeluar)}</div></div>
     </div>
   </div>`;
+
+  if (st.exportNote && st.exportNote.trim()) {
+    html += `<div class="section" style="background:#f9f9f9; border-left:4px solid #1a1a1a; padding:15px; margin-bottom:24px; border-radius:4px;">
+      <h2 style="margin-bottom:8px; font-size:12px; font-family:monospace; color:#555;">Evaluasi / Catatan Tambahan</h2>
+      <p style="font-size:12px; line-height:1.6; white-space:pre-wrap; color:#333; font-family:'Georgia',serif;">${escH(st.exportNote.trim())}</p>
+    </div>`;
+  }
 
   if(incSumCat && Object.keys(katMap).length){
     html += `<div class="section"><h2>Ringkasan per Kategori</h2>
@@ -881,4 +951,153 @@ function setDebtType(t){
 function renderAll(){ 
   renderDashboard(); 
   renderTx(); 
+}
+
+function renderSavings() {
+  const listEl = document.getElementById('savingsList');
+  if(!listEl) return;
+  if(!st.savings || st.savings.length === 0){
+    listEl.innerHTML = '<div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-mute);">Belum ada rencana tabungan.</div>';
+    return;
+  }
+
+  listEl.innerHTML = st.savings.map((g, index) => {
+    const cur = g.current || 0;
+    const tgt = g.target || 0;
+    const pct = tgt > 0 ? Math.min(100, Math.round((cur / tgt) * 100)) : 0;
+    const remaining = Math.max(0, tgt - cur);
+    const dep = g.deposit || 0;
+    const freq = g.frequency || 'minggu'; // hari, minggu, bulan
+
+    let predictionText = '';
+    if (remaining <= 0) {
+      predictionText = '<span style="color:var(--green); font-weight:bold;">🎉 Target Tercapai!</span>';
+    } else if (dep <= 0) {
+      predictionText = '<span style="color:var(--text-mute);">Masukkan jumlah tabungan untuk melihat prediksi</span>';
+    } else {
+      const periods = Math.ceil(remaining / dep);
+      if (freq === 'hari') {
+        const parts = [];
+        parts.push(`~${Math.ceil(periods / 7)} minggu`);
+        parts.push(`~${Math.ceil(periods / 30.4)} bulan`);
+        parts.push(`~${(periods / 365).toFixed(1)} tahun`);
+        predictionText = `Terpenuhi dalam <strong>${periods} hari</strong> (${parts.join(', ')})`;
+      } else if (freq === 'minggu') {
+        const parts = [];
+        parts.push(`~${Math.ceil(periods / 4.34)} bulan`);
+        parts.push(`~${(periods / 52.14).toFixed(1)} tahun`);
+        predictionText = `Terpenuhi dalam <strong>${periods} minggu</strong> (${parts.join(', ')})`;
+      } else if (freq === 'bulan') {
+        const parts = [];
+        parts.push(`~${(periods / 12).toFixed(1)} tahun`);
+        predictionText = `Terpenuhi dalam <strong>${periods} bulan</strong> (${parts.join(', ')})`;
+      }
+    }
+
+    if (g.editing) {
+      return `
+        <div class="savings-card" style="border-color: var(--gold); background: var(--bg); box-shadow: 0 0 10px rgba(212,175,55,0.08);">
+          <div class="sc-header">
+            <span style="font-size:12px; font-weight:bold; color:var(--gold); font-family: 'Playfair Display', serif;">Edit Rencana Tabungan</span>
+            <button class="sc-del" onclick="toggleEditSavingGoal(${index}, false)">Batal</button>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px; margin-top:5px;">
+            <div class="field">
+              <label style="font-size:11px; color:var(--text-dim); display:block; margin-bottom:4px;">Nama Impian</label>
+              <input type="text" id="editSavName_${index}" value="${escH(g.name)}" style="background:var(--bg-card); border:1px solid var(--border); border-radius:4px; color:var(--text); padding:8px 10px; font-size:12px; width:100%; outline:none;">
+            </div>
+            <div class="field">
+              <label style="font-size:11px; color:var(--text-dim); display:block; margin-bottom:4px;">Nominal Target (Rp)</label>
+              <input type="number" id="editSavTarget_${index}" value="${g.target}" style="background:var(--bg-card); border:1px solid var(--border); border-radius:4px; color:var(--text); padding:8px 10px; font-size:12px; width:100%; outline:none; font-family:'DM Mono',monospace;">
+            </div>
+            <div class="field">
+              <label style="font-size:11px; color:var(--text-dim); display:block; margin-bottom:4px;">Tabungan per Periode (Rp)</label>
+              <input type="number" id="editSavDeposit_${index}" value="${g.deposit}" style="background:var(--bg-card); border:1px solid var(--border); border-radius:4px; color:var(--text); padding:8px 10px; font-size:12px; width:100%; outline:none; font-family:'DM Mono',monospace;">
+            </div>
+            <div class="field">
+              <label style="font-size:11px; color:var(--text-dim); display:block; margin-bottom:4px;">Frekuensi</label>
+              <select id="editSavFreq_${index}" style="background:var(--bg-card); border:1px solid var(--border); border-radius:4px; color:var(--text); padding:8px 10px; font-size:12px; width:100%; outline:none; font-family:inherit;">
+                <option value="hari" ${freq === 'hari' ? 'selected' : ''}>Per Hari</option>
+                <option value="minggu" ${freq === 'minggu' ? 'selected' : ''}>Per Minggu</option>
+                <option value="bulan" ${freq === 'bulan' ? 'selected' : ''}>Per Bulan</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:12px;">
+            <button class="btn" onclick="saveEditedSavingGoal(${index})" style="flex:1; padding: 6px; font-size:11px; height: 32px;">✓ Simpan</button>
+            <button class="btn btn-ghost" onclick="toggleEditSavingGoal(${index}, false)" style="flex:1; padding: 6px; font-size:11px; height: 32px;">Batal</button>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="savings-card">
+        <div class="sc-header">
+          <div class="sc-title">${escH(g.name)}</div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="sc-del" onclick="toggleEditSavingGoal(${index}, true)" title="Edit Rencana" style="color:var(--text-dim); hover:color:var(--gold);">✎</button>
+            <button class="sc-del" onclick="deleteSavingGoal(${index})" title="Hapus">✕</button>
+          </div>
+        </div>
+        <div class="sc-amounts">
+          <span class="sc-cur">${rp(cur)}</span>
+          <span class="sc-tgt">Target: ${rp(tgt)}</span>
+        </div>
+        <div class="sc-bar-container">
+          <div class="sc-bar" style="width: ${pct}%"></div>
+        </div>
+        <div class="sc-progress-text">${pct}% dari target terpenuhi (${rp(remaining)} tersisa)</div>
+        <div class="sc-details">
+          <div>Rencana: <strong>${rp(dep)}</strong> per ${freq}</div>
+          <div class="sc-prediction">${predictionText}</div>
+        </div>
+        <div class="sc-actions">
+          <input type="number" id="addDepAmt_${index}" placeholder="Tambah Rp" style="width: 100px; padding: 6px; font-size: 11px; font-family: 'DM Mono', monospace; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text); outline:none;">
+          <button class="btn" style="padding: 6px 12px; font-size:11px; height:29px;" onclick="adjustSavingGoalAmount(${index}, true)">Tambah</button>
+          <button class="btn btn-ghost" style="padding: 6px 12px; font-size:11px; height:29px;" onclick="adjustSavingGoalAmount(${index}, false)">Tarik</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function exportToCSV() {
+  if (!st.transactions || st.transactions.length === 0) {
+    showToast('Tidak ada transaksi untuk diekspor.', 'error');
+    return;
+  }
+  
+  // Header columns
+  const headers = ['ID', 'Tanggal', 'Jenis', 'Jumlah (Rp)', 'Kategori', 'Tag', 'Catatan'];
+  
+  const csvRows = [headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',')];
+  
+  st.transactions.forEach(t => {
+    const tagsStr = (t.tags || []).join(';');
+    const row = [
+      `"${String(t.id).replace(/"/g, '""')}"`,
+      `"${String(t.date).replace(/"/g, '""')}"`,
+      t.type === 'pemasukan' ? '"Pemasukan"' : '"Pengeluaran"',
+      t.amount,
+      `"${(t.category || '').replace(/"/g, '""')}"`,
+      `"${tagsStr.replace(/"/g, '""')}"`,
+      `"${(t.note || '').replace(/"/g, '""')}"`
+    ];
+    csvRows.push(row.join(','));
+  });
+  
+  // "sep=," explicitly signals to Excel that comma is the delimiter, splitting data across columns beautifully in any region setting.
+  const csvString = '\uFEFF' + 'sep=,\r\n' + csvRows.join('\r\n');
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'GB_Money_Management_Export_' + new Date().toISOString().substring(0,10) + '.csv');
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  showToast('Spreadsheet berhasil diekspor!', 'success');
 }
