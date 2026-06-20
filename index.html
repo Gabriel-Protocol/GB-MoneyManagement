@@ -38,31 +38,41 @@
 
 <!-- HEADER -->
 <header>
-  <div><div class="logo">GB — Money Management</div></div>
-  <div class="auth-section">
-    <!-- Theme Toggle Button -->
-    <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggleBtn" title="Ganti Tema" style="background:var(--bg-mid); border:1px solid var(--border-s); font-size:14px; cursor:pointer; padding:8px 12px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; transition:all 0.2s; color:var(--text); margin-right:8px; line-height:1; font-family:var(--font-mono); font-weight:500;">
-      <span id="themeToggleLabel" style="margin-right:6px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Light Mode</span> <span id="themeToggleIcon">☼</span>
-    </button>
-    <div id="syncStatus" style="display:none;align-items:center;gap:5px;" class="auth-section">
-      <div class="sync-dot" id="syncDot"></div>
-      <span class="sync-label" id="syncLabel">—</span>
+  <!-- Left Side: Logo & Status Badge (Image 1 & 2 Style) -->
+  <div class="logo-block">
+    <div class="logo-icon">GB</div>
+    <div class="logo-info">
+      <h1 class="logo">GB - Money Management</h1>
+      <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:2px;">
+        <!-- Sync Status Pill -->
+        <div id="syncStatus" style="display:none; align-items:center;" class="sync-badge">
+          <span class="sync-dot" id="syncDot"></span>
+          <span class="sync-label" id="syncLabel">—</span>
+        </div>
+        <div class="auth-user" id="authUser" style="display:none;"></div>
+      </div>
     </div>
-    <div class="auth-user" id="authUser" style="display:none;"></div>
-    <button class="btn-login" id="loginBtn" onclick="handleLogin()">↳ Login Google</button>
-    <button class="btn-logout" id="logoutBtn" onclick="handleLogout()" style="display:none;">Keluar</button>
+  </div>
+
+  <!-- Right Side: Navigation Tabs & Auth Section (Image 1 Style) -->
+  <div class="nav-container">
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('dashboard')">Dashboard</button>
+      <button class="tab" onclick="switchTab('transaksi')">Transaksi</button>
+      <button class="tab" onclick="switchTab('hutang')">Hutang & Piutang</button>
+      <button class="tab" onclick="switchTab('tabungan')">Tabungan</button>
+      <button class="tab" onclick="switchTab('pengaturan')">Pengaturan</button>
+      <button class="tab" onclick="switchTab('data')">Data</button>
+    </div>
+
+    <!-- Auth Buttons -->
+    <div class="auth-section">
+      <button class="btn-login" id="loginBtn" onclick="handleLogin()" style="padding:10px 16px; font-size:11px; font-weight:600; border-radius:10px;">↳ Login Google</button>
+      <button class="btn-logout" id="logoutBtn" onclick="handleLogout()" style="display:none; padding:10px 16px; font-size:11px; font-weight:600; border-radius:10px;">Keluar</button>
+    </div>
   </div>
 </header>
-
-<!-- TABS -->
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('dashboard')">Dashboard</button>
-  <button class="tab" onclick="switchTab('transaksi')">Transaksi</button>
-  <button class="tab" onclick="switchTab('hutang')">Hutang & Piutang</button>
-  <button class="tab" onclick="switchTab('tabungan')">Tabungan</button>
-  <button class="tab" onclick="switchTab('pengaturan')">Pengaturan</button>
-  <button class="tab" onclick="switchTab('data')">Data</button>
-</div>
 
 <!-- ═══ DASHBOARD ═══ -->
 <div class="panel active" id="panel-dashboard">
@@ -240,6 +250,19 @@
 <!-- ═══ PENGATURAN ═══ -->
 <div class="panel" id="panel-pengaturan">
 
+  <div class="settings-group">
+    <div class="sg-title">Tema & Tampilan</div>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; background:var(--bg); border:1px solid var(--border-s); border-radius:12px; padding:16px 20px; transition:all 0.2s;">
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <span style="font-size:13px; font-weight:600; color:var(--text);">Ganti Mode Tampilan</span>
+        <span style="font-size:11px; color:var(--text-mute);">Pilih antara tema gelap untuk kenyamanan mata atau tema terang yang bersih.</span>
+      </div>
+      <!-- Theme Toggle Button -->
+      <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggleBtn" title="Ganti Tema" style="background:var(--bg-card); border:1px solid var(--border-s); font-size:14px; cursor:pointer; padding:10px 18px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; transition:all 0.2s; color:var(--text); line-height:1; font-family:var(--font-sans); font-weight:600; box-shadow:var(--shadow-sm);">
+        <span id="themeToggleLabel" style="margin-right:8px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">Light Mode</span> <span id="themeToggleIcon">☼</span>
+      </button>
+    </div>
+  </div>
 
   <div class="settings-group">
     <div class="sg-title">Kelola Kategori Pengeluaran</div>
