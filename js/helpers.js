@@ -109,3 +109,28 @@ function updateThemeUI(){
 
 // Run updateThemeUI immediately upon DOM ready
 document.addEventListener('DOMContentLoaded', updateThemeUI);
+
+// Display Cloud Synchronization Status
+function showSyncStatus(state, text) {
+  const statusEl = document.getElementById('syncStatus');
+  const dotEl = document.getElementById('syncDot');
+  const labelEl = document.getElementById('syncLabel');
+  
+  if (!statusEl || !dotEl || !labelEl) return;
+  
+  statusEl.style.display = 'flex';
+  labelEl.textContent = text;
+  
+  // Clear other state classes
+  dotEl.className = 'sync-dot';
+  
+  if (state === 'syncing') {
+    dotEl.classList.add('syncing');
+  } else if (state === 'synced') {
+    dotEl.classList.add('synced');
+  } else if (state === 'error') {
+    dotEl.classList.add('error');
+  }
+}
+window.showSyncStatus = showSyncStatus;
+
