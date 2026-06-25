@@ -50,9 +50,64 @@ window.handleLogin = async function() {
     const user = result.user;
     showToast("Selamat datang, " + user.displayName + "!", "success");
   } catch (err) {
-    showToast("Gagal login: " + err.message, "error");
+    if (err.code === 'auth/unauthorized-domain' || (err.message && err.message.includes('unauthorized-domain'))) {
+      showUnauthorizedDomainInstructions();
+      showToast("Domain belum didaftarkan di Firebase Console!", "error");
+    } else {
+      showToast("Gagal login: " + err.message, "error");
+    }
     console.error("Auth error:", err);
   }
+};
+
+// Helper to show detailed setup steps for auth/unauthorized-domain error
+function showUnauthorizedDomainInstructions() {
+  const container = document.getElementById('loginErrorContainer');
+  if (!container) return;
+  
+  const currentHost = window.location.hostname;
+  
+  container.innerHTML = `
+    <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 12px; padding: 18px; margin-bottom: 24px; text-align: left; font-size: 13px; color: #fca5a5; line-height: 1.5; animation: slideInUp 0.4s ease;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: #f87171; font-weight: 700; font-size: 14px;">
+        <svg style="width: 18px; height: 18px; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>Domain Otorisasi Diperlukan</span>
+      </div>
+      <p style="margin-bottom: 12px; color: #e4e4e7; font-size: 12px;">
+        Firebase memblokir login karena domain aplikasi ini belum didaftarkan sebagai Authorized Domain di proyek Firebase Anda.
+      </p>
+      
+      <div style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 10px; margin-bottom: 14px; border: 1px solid rgba(255, 255, 255, 0.08);">
+        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #a1a1aa; margin-bottom: 4px; font-weight: 600;">Salin Domain Ini:</div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <code id="domainNameCode" style="font-family: monospace; color: #60a5fa; font-size: 11px; word-break: break-all; font-weight: 600;">${currentHost}</code>
+          <button onclick="copyDomainToClipboard()" style="background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: background 0.2s; white-space: nowrap; font-weight: 600;">Salin</button>
+        </div>
+      </div>
+      
+      <div style="font-weight: 600; color: #ffffff; margin-bottom: 6px; font-size: 12px;">Cara Mengatasi di Firebase Console:</div>
+      <ol style="margin: 0; padding-left: 18px; color: #d4d4d8; display: flex; flex-direction: column; gap: 6px; font-size: 11.5px;">
+        <li>Buka <a href="https://console.firebase.google.com/" target="_blank" style="color: #60a5fa; text-decoration: underline; font-weight: 500;">Firebase Console</a> Anda.</li>
+        <li>Pilih proyek Anda, lalu masuk ke menu <strong>Build > Authentication</strong>.</li>
+        <li>Klik tab <strong>Settings</strong> di bagian atas.</li>
+        <li>Pilih submenu <strong>Authorized domains</strong> (Domain otorisasi).</li>
+        <li>Klik tombol <strong>Add domain</strong> (Tambahkan domain).</li>
+        <li>Tempel (Paste) domain yang sudah Anda salin di atas, lalu klik <strong>Add</strong>.</li>
+        <li>Kembali ke sini dan klik <strong>Masuk dengan Google</strong> kembali!</li>
+      </ol>
+    </div>
+  `;
+}
+
+window.copyDomainToClipboard = function() {
+  const currentHost = window.location.hostname;
+  navigator.clipboard.writeText(currentHost).then(() => {
+    showToast("Domain disalin ke clipboard!", "success");
+  }).catch(() => {
+    showToast("Gagal menyalin otomatis, silakan salin manual.", "error");
+  });
 };
 
 // Log Out
@@ -218,6 +273,8 @@ document.addEventListener('DOMContentLoaded', () => {
             Project Firebase belum terhubung. Silakan masukkan kredensial Firebase Anda melalui tab <strong>Settings</strong> di AI Studio (sesuai kunci <code>VITE_FIREBASE_*</code> di file <code>.env.example</code>).
           </div>
         ` : ''}
+
+        <div id="loginErrorContainer"></div>
 
         <button class="btn btn-google-login" onclick="handleLogin()">
           <svg style="width:18px; height:18px;" viewBox="0 0 24 24">
