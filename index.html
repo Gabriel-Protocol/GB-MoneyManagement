@@ -50,7 +50,7 @@
     </div>
   </div>
 
-  <!-- Right Side: Navigation Tabs & Auth Section (Image 1 Style) -->
+  <!-- Right Side: Navigation Tabs (Image 1 Style) -->
   <div class="nav-container">
     <!-- TABS -->
     <div class="tabs">
@@ -61,9 +61,6 @@
       <button class="tab" onclick="switchTab('pengaturan')">Pengaturan</button>
       <button class="tab" onclick="switchTab('data')">Data</button>
     </div>
-
-    <!-- Dynamic User Profile & Logout Section -->
-    <div id="authUser" style="display:none;"></div>
   </div>
 </header>
 
@@ -245,6 +242,9 @@
 
 <!-- ═══ PENGATURAN ═══ -->
 <div class="panel" id="panel-pengaturan">
+
+  <!-- Dynamic User Profile & Logout Section (Now placed inside Settings) -->
+  <div id="authUser" style="display:none; margin-bottom: 24px;"></div>
 
   <div class="settings-group">
     <div class="sg-title">Tema & Tampilan</div>

@@ -1200,30 +1200,40 @@ tbody tr.day-sep-row:hover{background:transparent !important;}
   transform: scale(1.1);
 }
 
-/* User Profile Card in Header */
+/* User Profile Card in Settings */
 .user-profile-card {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 16px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 6px 12px;
-  height: 42px;
+  border-radius: 14px;
+  padding: 16px 20px;
   box-shadow: var(--shadow-sm);
   transition: all 0.2s ease;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
 .user-profile-card:hover {
   border-color: var(--text-mute);
 }
 
+.user-profile-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 200px;
+}
+
 .user-avatar {
-  width: 28px;
-  height: 28px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1.5px solid var(--border);
+  border: 2px solid var(--gold);
   background: var(--bg-mid);
 }
 
@@ -1234,38 +1244,32 @@ tbody tr.day-sep-row:hover{background:transparent !important;}
 }
 
 .user-name {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--text);
-  line-height: 1.25;
-  max-width: 120px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .user-email {
-  font-size: 9px;
+  font-size: 11.5px;
   color: var(--text-mute);
-  line-height: 1.25;
-  max-width: 120px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.3;
+  margin-top: 2px;
 }
 
 .user-logout-btn {
-  background: none;
-  border: none;
-  color: var(--text-mute);
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 8px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
   transition: all 0.2s ease;
-  margin-left: 6px;
 }
 
 .user-logout-btn svg {
@@ -1274,7 +1278,8 @@ tbody tr.day-sep-row:hover{background:transparent !important;}
 }
 
 .user-logout-btn:hover {
-  color: var(--red);
-  background: rgba(220, 53, 69, 0.1);
+  background: rgba(239, 68, 68, 0.16);
+  border-color: #ef4444;
+  color: #ef4444;
 }
 

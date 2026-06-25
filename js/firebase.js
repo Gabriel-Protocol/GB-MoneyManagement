@@ -497,21 +497,27 @@ document.addEventListener('DOMContentLoaded', () => {
           loginOverlayEl.classList.add('logged-in');
         }
         
-        // Render Google User Profile in Header
+        // Render Google User Profile in Settings Tab
         if (authUserEl) {
-          authUserEl.style.display = 'flex';
+          authUserEl.style.display = 'block';
           authUserEl.innerHTML = `
-            <div class="user-profile-card">
-              <img src="${user.photoURL || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}" class="user-avatar" alt="${user.displayName}" referrerpolicy="no-referrer">
-              <div class="user-meta">
-                <span class="user-name">${user.displayName}</span>
-                <span class="user-email">${user.email}</span>
+            <div class="settings-group">
+              <div class="sg-title">Akun Terhubung (Cloud Sync)</div>
+              <div class="user-profile-card">
+                <div class="user-profile-info">
+                  <img src="${user.photoURL || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}" class="user-avatar" alt="${user.displayName}" referrerpolicy="no-referrer">
+                  <div class="user-meta">
+                    <span class="user-name">${user.displayName}</span>
+                    <span class="user-email">${user.email}</span>
+                  </div>
+                </div>
+                <button class="user-logout-btn" onclick="handleLogout()" title="Keluar dari akun">
+                  <svg viewBox="0 0 24 24" style="width:16px; height:16px;">
+                    <path fill="currentColor" d="M16 17v-3H9v-4h7V7l5 5-5 5M14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
+                  </svg>
+                  <span>Keluar Akun</span>
+                </button>
               </div>
-              <button class="user-logout-btn" onclick="handleLogout()" title="Keluar dari akun">
-                <svg viewBox="0 0 24 24">
-                  <path fill="currentColor" d="M16 17v-3H9v-4h7V7l5 5-5 5M14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
-                </svg>
-              </button>
             </div>
           `;
         }
