@@ -51,6 +51,7 @@ var st = loadSt() || {
 
 // State normalizer
 if (!st.settings) st.settings = { limitBulan: 0, limitKategori: {} };
+if (!st.transactions) st.transactions = [];
 if (!st.debts) st.debts = [];
 if (!st.categories) st.categories = [...DEFAULT_CATS];
 if (!st.settings.limitKategori) st.settings.limitKategori = {};

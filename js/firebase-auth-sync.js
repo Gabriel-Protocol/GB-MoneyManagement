@@ -408,14 +408,15 @@ window.kirimRingkasanKeHub = async function() {
   
   try {
     // Determine active transactions for current month
-    const targetYear = curYear || new Date().getFullYear();
-    const targetMonth = (curMonth !== undefined && curMonth !== null) ? curMonth : new Date().getMonth();
+    const targetYear = (typeof curYear !== 'undefined' && curYear) ? curYear : new Date().getFullYear();
+    const targetMonth = (typeof curMonth !== 'undefined' && curMonth !== null) ? curMonth : new Date().getMonth();
     
-    const txs = typeof txForMonth === 'function' ? txForMonth(targetYear, targetMonth) : [];
+    const txs = typeof window.txForMonth === 'function' ? window.txForMonth(targetYear, targetMonth) : [];
+    const transactions = (typeof st !== 'undefined' && st && st.transactions) ? st.transactions : [];
     
     // Overall calculations
-    const overallMasuk = st.transactions.filter(t => t.type === 'pemasukan').reduce((a, t) => a + t.amount, 0);
-    const overallKeluar = st.transactions.filter(t => t.type === 'pengeluaran').reduce((a, t) => a + t.amount, 0);
+    const overallMasuk = transactions.filter(t => t.type === 'pemasukan').reduce((a, t) => a + t.amount, 0);
+    const overallKeluar = transactions.filter(t => t.type === 'pengeluaran').reduce((a, t) => a + t.amount, 0);
     const netBalance = overallMasuk - overallKeluar;
     
     // Monthly Expense
@@ -427,7 +428,7 @@ window.kirimRingkasanKeHub = async function() {
     const avgExpenseDay = jmlHari > 0 ? Math.round(totalExpense / jmlHari) : 0;
     
     // Sisa Limit Bulanan
-    const lb = (st && st.settings && st.settings.limitBulan) || 0;
+    const lb = (typeof st !== 'undefined' && st && st.settings && st.settings.limitBulan) || 0;
     const remainingMonthlyLimit = lb > 0 ? (lb - totalExpense) : 0;
     
     // Assemble the payload exactly as instructed by Web Induk specification
@@ -435,7 +436,8 @@ window.kirimRingkasanKeHub = async function() {
       netBalance: netBalance,
       totalExpense: totalExpense,
       avgExpenseDay: avgExpenseDay,
-      remainingMonthlyLimit: remainingMonthlyLimit
+      remainingMonthlyLimit: remainingMonthlyLimit,
+      lastUpdated: new Date().toISOString()
     };
     
     await setDoc(hubRef, payload, { merge: true });
