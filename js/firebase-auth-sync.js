@@ -4,7 +4,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Firebase configuration from environment or direct manual setup.
 // If configuring via the AI Studio editor settings, use these exact VITE_ variables.
@@ -404,46 +404,64 @@ window.kirimRingkasanKeHub = async function() {
   if (!auth || !db || !auth.currentUser) return;
   
   const userId = auth.currentUser.uid;
-  const hubRef = doc(db, "users", userId, "summary", "money");
+  const dataCollRef = collection(db, "users", userId, "data");
+  const configRef = doc(db, "users", userId, "config", "main");
   
   try {
-    // Determine active transactions for current month
-    const targetYear = (typeof curYear !== 'undefined' && curYear) ? curYear : new Date().getFullYear();
-    const targetMonth = (typeof curMonth !== 'undefined' && curMonth !== null) ? curMonth : new Date().getMonth();
-    
-    const txs = typeof window.txForMonth === 'function' ? window.txForMonth(targetYear, targetMonth) : [];
     const transactions = (typeof st !== 'undefined' && st && st.transactions) ? st.transactions : [];
     
-    // Overall calculations
-    const overallMasuk = transactions.filter(t => t.type === 'pemasukan').reduce((a, t) => a + t.amount, 0);
-    const overallKeluar = transactions.filter(t => t.type === 'pengeluaran').reduce((a, t) => a + t.amount, 0);
-    const netBalance = overallMasuk - overallKeluar;
+    // 1. Sync Limit Bulanan
+    const limitBulanan = (typeof st !== 'undefined' && st && st.settings && st.settings.limitBulan) || 0;
+    await setDoc(configRef, { limitBulanan: limitBulanan }, { merge: true });
     
-    // Monthly Expense
-    const totalExpense = txs.filter(t => t.type === 'pengeluaran').reduce((a, t) => a + t.amount, 0);
+    // 2. Sync transactions
+    // To handle deletions, we first get all existing documents in 'data' subcollection
+    const querySnapshot = await getDocs(dataCollRef);
+    const existingDocIds = [];
+    querySnapshot.forEach((docSnap) => {
+      // Ignore the app's own state document
+      if (docSnap.id !== 'buku_kas') {
+         existingDocIds.push(docSnap.id);
+      }
+    });
     
-    // Average Daily Expense (using actual recorded expense days)
-    const hariKeluar = new Set(txs.filter(t => t.type === 'pengeluaran').map(t => t.date));
-    const jmlHari = hariKeluar.size;
-    const avgExpenseDay = jmlHari > 0 ? Math.round(totalExpense / jmlHari) : 0;
+    // Save/Update current transactions
+    const currentTxIds = new Set();
+    const savePromises = transactions.map(tx => {
+      currentTxIds.add(tx.id);
+      
+      // Convert to valid ISO string if possible, else keep original
+      let isoDate = tx.date;
+      try {
+        if (!isoDate.includes('T')) {
+           isoDate = new Date(tx.date).toISOString();
+        }
+      } catch(e) {}
+      
+      return setDoc(doc(db, "users", userId, "data", tx.id), {
+        amount: Number(tx.amount),
+        type: tx.type,
+        date: isoDate,
+        deskripsi: tx.note || tx.category || 'Transaksi'
+      }); // Do not merge, we want to fully replace the transaction document
+    });
     
-    // Sisa Limit Bulanan
-    const lb = (typeof st !== 'undefined' && st && st.settings && st.settings.limitBulan) || 0;
-    const remainingMonthlyLimit = lb > 0 ? (lb - totalExpense) : 0;
+    await Promise.all(savePromises);
     
-    // Assemble the payload exactly as instructed by Web Induk specification
-    const payload = {
-      netBalance: netBalance,
-      totalExpense: totalExpense,
-      avgExpenseDay: avgExpenseDay,
-      remainingMonthlyLimit: remainingMonthlyLimit,
-      lastUpdated: new Date().toISOString()
-    };
+    // Delete missing transactions
+    const deletePromises = [];
+    for (const docId of existingDocIds) {
+      if (!currentTxIds.has(docId)) {
+        deletePromises.push(deleteDoc(doc(db, "users", userId, "data", docId)));
+      }
+    }
+    if (deletePromises.length > 0) {
+      await Promise.all(deletePromises);
+    }
     
-    await setDoc(hubRef, payload, { merge: true });
-    console.log("[Firebase] Berhasil memantulkan data ringkasan ke Web Induk:", payload);
+    console.log("[Firebase] Berhasil sinkronisasi transaksi & limit ke Web Homepage.");
   } catch (err) {
-    console.error("[Firebase] Gagal mengirim ringkasan ke hub:", err);
+    console.error("[Firebase] Gagal sinkronisasi ke Web Homepage:", err);
   }
 };
 
