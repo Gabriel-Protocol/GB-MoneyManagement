@@ -155,19 +155,12 @@ service cloud.firestore {
     }
 
     function isValidUserConfig(data) {
-      return data.theme is string &&
-             data.theme.size() <= 10 &&
-             data.thresholdVeryBad is number &&
-             data.thresholdVeryBad >= 0 &&
-             data.thresholdVeryBad <= 24 &&
-             data.thresholdBad is number &&
-             data.thresholdBad >= 0 &&
-             data.thresholdBad <= 24 &&
-             data.thresholdFair is number &&
-             data.thresholdFair >= 0 &&
-             data.thresholdFair <= 24 &&
-             data.habitsConfig is list &&
-             data.habitsConfig.size() <= 50;
+      return (data.theme == null || (data.theme is string && data.theme.size() <= 10)) &&
+             (data.thresholdVeryBad == null || (data.thresholdVeryBad is number && data.thresholdVeryBad >= 0 && data.thresholdVeryBad <= 24)) &&
+             (data.thresholdBad == null || (data.thresholdBad is number && data.thresholdBad >= 0 && data.thresholdBad <= 24)) &&
+             (data.thresholdFair == null || (data.thresholdFair is number && data.thresholdFair >= 0 && data.thresholdFair <= 24)) &&
+             (data.habitsConfig == null || (data.habitsConfig is list && data.habitsConfig.size() <= 50)) &&
+             (data.limitBulanan == null || (data.limitBulanan is number && data.limitBulanan >= 0));
     }
 
     function isValidUserDay(data) {
@@ -243,19 +236,24 @@ service cloud.firestore {
     }
 
     function isValidUserConfig(data) {
-      return data.theme is string &&
-             data.theme.size() <= 10 &&
-             data.thresholdVeryBad is number &&
-             data.thresholdVeryBad >= 0 &&
-             data.thresholdVeryBad <= 24 &&
-             data.thresholdBad is number &&
-             data.thresholdBad >= 0 &&
-             data.thresholdBad <= 24 &&
-             data.thresholdFair is number &&
-             data.thresholdFair >= 0 &&
-             data.thresholdFair <= 24 &&
-             data.habitsConfig is list &&
-             data.habitsConfig.size() <= 50;
+      return (data.theme == null || (data.theme is string && data.theme.size() <= 10)) &&
+             (data.thresholdVeryBad == null || (data.thresholdVeryBad is number && data.thresholdVeryBad >= 0 && data.thresholdVeryBad <= 24)) &&
+             (data.thresholdBad == null || (data.thresholdBad is number && data.thresholdBad >= 0 && data.thresholdBad <= 24)) &&
+             (data.thresholdFair == null || (data.thresholdFair is number && data.thresholdFair >= 0 && data.thresholdFair <= 24)) &&
+             (data.habitsConfig == null || (data.habitsConfig is list && data.habitsConfig.size() <= 50)) &&
+             (data.limitBulanan == null || (data.limitBulanan is number && data.limitBulanan >= 0));
+    }
+
+    function isValidUserDay(data) {
+      return data.hours is number &&
+             data.hours >= 0 &&
+             data.hours <= 24 &&
+             data.completedHabits is list &&
+             data.completedHabits.size() <= 100;
+    }
+
+    function isValidDateId(id) {
+       return id is string && id.size() <= 20 && id.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
     }
 
     // Match rules
@@ -386,15 +384,23 @@ window.syncFromFirebase = async function() {
   }
 };
 
-// Trigger manual sync button
+// Trigger manual sync button (Two-way sync: saves current local state first to update Homepage, then pulls latest from cloud)
 window.manualSync = async function() {
   if (!auth || !auth.currentUser) {
     showToast("Belum login.", "error");
     return;
   }
   showSyncStatus('syncing', 'Sinkronisasi...');
-  await window.syncFromFirebase();
-  showToast("Sinkronisasi Firebase selesai!", "success");
+  try {
+    // 1. Upload local data first (backed up & synced to individual subcollections for the homepage)
+    await window.saveToFirebase();
+    // 2. Refresh local state from the latest database backup
+    await window.syncFromFirebase();
+    showToast("Sinkronisasi Firebase berhasil!", "success");
+  } catch (err) {
+    console.error("Manual sync error:", err);
+    showToast("Gagal sinkronisasi data.", "error");
+  }
 };
 
 // ── HUB SUMMARY EXPORTER (Web C Reflection) ──
@@ -430,11 +436,15 @@ window.kirimRingkasanKeHub = async function() {
     const savePromises = transactions.map(tx => {
       currentTxIds.add(tx.id);
       
-      // Convert to valid ISO string if possible, else keep original
+      // Convert to valid ISO string at noon UTC to ensure correct date falls on the same calendar day in all timezones
       let isoDate = tx.date;
       try {
         if (!isoDate.includes('T')) {
-           isoDate = new Date(tx.date).toISOString();
+          if (/^\d{4}-\d{2}-\d{2}$/.test(tx.date)) {
+            isoDate = tx.date + "T12:00:00.000Z";
+          } else {
+            isoDate = new Date(tx.date).toISOString();
+          }
         }
       } catch(e) {}
       
