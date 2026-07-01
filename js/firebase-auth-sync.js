@@ -199,6 +199,16 @@ service cloud.firestore {
       match /mmdata/{dateId} {
         allow read, write: if isOwner(userId);
       }
+
+      // Buku Kas Data Subcollection (legacy)
+      match /data/{dataId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Self-Evaluation Web
+      match /evaluations/{docId} {
+        allow read, write: if isOwner(userId);
+      }
     }
   }
 }</code></pre>
@@ -278,6 +288,16 @@ service cloud.firestore {
 
       // Buku Kas Data Subcollection
       match /mmdata/{dateId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Buku Kas Data Subcollection (legacy)
+      match /data/{dataId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Self-Evaluation Web
+      match /evaluations/{docId} {
         allow read, write: if isOwner(userId);
       }
     }
